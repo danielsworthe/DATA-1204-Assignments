@@ -1,0 +1,25 @@
+- used terminal to setup virtual environment and install pandas and requests libraries from the requirements.txt file 
+- asked ChatGPT for first API request code and verified with Gemini that information given was correct (cross-referencing for accuracy) 
+- checked Open-Meteo's built-in API Builder tool to confirm that my parameters are correct and formatted right 
+- ran python ingest/ingest_weather.py successfully as reflected in output print statements reading "Success! Data received." and "Weather data saved to Bronze" thus creating the first JSON file 
+- committed changes for API 1 bronze level to GitHub repository
+- Smart App Control blocked part of this app so I asked Gemini for help with the error
+- error was resolved or negated 
+- successfully ran python transform/transform_weather.py as reflected in print statement output reading "Weather data saved to Silver" thus creating the first CSV file 
+- copied API request code for second API into Visual Studio
+- once again checked Open-Meteo's built-in API Builder tool to confirm that my parameters are correct and formatted right (added minor variations from AI code, including another variable, for completeness and future analysis)
+- ran python ingest/ingest_air_quality.py successfully as reflected in output print statement reading "Air quality data saved to Bronze" thus creating the second JSON file
+- committed changes for API 2 bronze level to GitHub repository
+- revised original ChatGPT code for silver level (2nd API) because it was missing two variables "pm10" and "US_AQI" with Gemini for accuracy and completeness
+- successfully ran python transform/transform_air_quality.py as reflected in output print statements reading "Success: Processed data/bronze\air_quality_20260410.json" and "Daily averages for PM2.5, PM10, and US AQI saved to Silver." thus creating the second CSV file
+- noticed that there were about 10 decimal places for each value in the second CSV file, so I modified the transform script (2nd API) to round to 2 decimal places only for clarity (did this before pushing to origin)
+- double checked the 2nd CSV file (silver level output for 2nd API) and noticed that the dates were from January to March of 2023 which is incorrect so I modified both ingest and transform scripts (2nd API) for actual dates of January to December of 2025
+- because of previous error I double checked both silver level outputs (1st and 2nd API's) (CSV files) to confirm dates are correct and values seem logical/reasonable 
+- copied gold layer joining of the two silver layers code into Visual Studio
+- double checked that the vital code logic and contents of the gold layer code (to combine both API's) given from ChatGPT are correct with Gemini; Gemini gave some minor additions (forcing to datetime and rounding of values) to improve and enhance the code
+- successfully ran python transform/create_gold.py as reflected in print statement output reading "Gold dataset created"
+- double checked data combination in the weather_&_air_quality_gold.csv and confirmed date is correct and all other columns are present, calculated columns for analysis also looked reasonable; also confirmed all data was present by seeing that there is 366 total rows in this file (header row + 365 days/dates in 2025)
+- populated .gitignore file with important file types to not publish to GitHub Online
+- created a changelog.md file and added this log's text content into it 
+- createded fully finished README.md read me file to explain the whole assignment for anyone to understand it 
+- committed final changes including gold level code and extra content added (changelog, updated Read Me file, etc.) to GitHub repository
