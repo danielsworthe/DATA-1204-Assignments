@@ -5,7 +5,7 @@ import plotly.express as px
 import streamlit as st
 from scipy import stats
 
-DATA_PATH = Path("data/gold/final_dataset.csv")
+DATA_PATH = Path("assignment3&4/data/gold/final_dataset.csv")
 
 st.set_page_config(
     page_title="Toronto 2025 Weather & Air Quality Analysis",
@@ -119,21 +119,69 @@ st.write(
     """
 )
 
+# Calculating ratios for dynamic colour changes for summary metrics
+avg_pm25 = analysis_df["pm25"].mean()
+bad_air_count = int(analysis_df['bad_air_day'].sum())
+total_days = len(analysis_df)
+bad_air_ratio = bad_air_count / total_days if total_days > 0 else 0
+
+# METRIC 2: PM2.5 Dynamic Colour
+if avg_pm25 < 12.0:
+    pm_color = "green"
+    pm_status = "Good"
+elif avg_pm25 < 35.4:
+    pm_color = "yellow"
+    pm_status = "Moderate"
+else:
+    pm_color = "red"
+    pm_status = "Unhealthy"
+
+# METRIC 4: Bad Air Day Dynamic Colour
+# If more than 10% of days are bad, show red. If 1-10%, show orange.
+if bad_air_ratio == 0:
+    air_color = "green"
+    air_status = "Clear Skies"
+elif bad_air_ratio < 0.10:
+    air_color = "orange"
+    air_status = "Occasional Issues"
+else:
+    air_color = "red"
+    air_status = "Frequent Pollution"
+
+# Display
+st.write("---")
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Rows in filtered data", f"{len(analysis_df):,}")
-col2.metric("Average PM2.5", safe_number(analysis_df["pm25"].mean()))
-col3.metric("Holiday days", f"{int(analysis_df['is_holiday'].sum()):,}")
-col4.metric("Bad air days", f"{int(analysis_df['bad_air_day'].sum()):,}")
+
+with col1:
+    st.write("**Rows in Data**")
+    st.subheader(f"{total_days:,}")
+    st.caption("Context: Days in 2025")
+
+with col2:
+    st.write("**Average PM2.5**")
+    st.markdown(f"### :{pm_color}[{avg_pm25:.4f}]")
+    st.caption(f"Status: **{pm_status}**")
+
+with col3:
+    st.write("**Holiday Days**")
+    st.markdown(f"### :blue[{int(analysis_df['is_holiday'].sum())}]")
+    st.caption("Context: Calendar Events")
+
+with col4:    
+    st.write("**Bad Air Days**")
+    st.markdown(f"### :{air_color}[{bad_air_count}]")
+    st.caption(f"Trend: **{air_status}**")
+st.write("---")
 
 tab1, tab2, tab3, tab4 = st.tabs(["Data Preview", "Visual story", "Hypothesis tests", "Reflection"])
 
 with tab1:
     st.subheader("Data Preview")
     st.write("Sample of the final dataset:")
-    st.dataframe(analysis_df.head(10), use_container_width=True)
+    st.dataframe(analysis_df.head(10), width='stretch')
 
     st.write("Summary statistics for numeric columns:")
-    st.dataframe(analysis_df.describe(include=[np.number]).T, use_container_width=True)
+    st.dataframe(analysis_df.describe(include=[np.number]).T, width='stretch')
 
     st.write("Useful columns in this project:")
     st.markdown(
@@ -160,7 +208,7 @@ with tab2:
             title="PM2.5 Over Time",
             labels={"pm25": "PM2.5", "date": "Date"},
         )
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width='stretch')
 
     with right:
         fig2 = px.histogram(
@@ -170,7 +218,7 @@ with tab2:
             title="Distribution of Daily Maximum Temperature",
             labels={"temp_max": "Daily Max Temperature"},
         )
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width='stretch')
 
     left2, right2 = st.columns(2)
     with left2:
@@ -181,7 +229,7 @@ with tab2:
             title="PM2.5 by Holiday / Non-holiday Days",
             labels={"day_type": "Day Type", "pm25": "PM2.5"},
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width='stretch')
 
     with right2:
         fig4 = px.scatter(
@@ -192,7 +240,7 @@ with tab2:
             title="Temperature vs PM2.5",
             labels={"temp_max": "Daily Max Temperature", "pm25": "PM2.5"},
         )
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width='stretch')
 
 with tab3:
     st.subheader("Hypothesis tests")
@@ -243,7 +291,7 @@ with tab3:
     contingency = pd.crosstab(chi_df["day_type"], chi_df["bad_air_label"])
 
     st.write("Question: Are holiday days independent of bad air days?")
-    st.dataframe(contingency, use_container_width=True)
+    st.dataframe(contingency, width='stretch')
 
     if contingency.shape[0] >= 2 and contingency.shape[1] >= 2:
         chi2, chi_p, dof, expected = stats.chi2_contingency(contingency)

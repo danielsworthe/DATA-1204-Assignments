@@ -140,12 +140,13 @@ An interactive dashboard was built using :contentReference[oaicite:3]{index=3}.
 
 ### 1. Install Dependencies
 
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 ---
 
 ### 2. Run Assignment 3 Pipeline
 
+```
 python ingest/ingest_weather.py
 python ingest/ingest_air_quality.py
 
@@ -153,20 +154,23 @@ python transform/transform_weather.py
 python transform/transform_air_quality.py
 
 python transform/create_gold.py
+```
 
 ---
 
 ### 3. Run Assignment 4 Pipeline
 
+```
 python ingest/ingest_holidays.py
 python transform/transform_holidays.py
 python transform/create_final_dataset.py
+```
 
 ---
 
 ### 4. Launch the App
 
-streamlit run app/streamlit_app.py
+`streamlit run app/streamlit_app.py`
 
 ---
 
