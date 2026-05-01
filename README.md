@@ -1,5 +1,5 @@
 # Assignment 3 & 4: Data Pipeline and Interactive Statistical Analysis  
-**Pack B — Weather & Air Quality**
+**Weather & Air Quality**
 
 ---
 
@@ -19,20 +19,20 @@ A data pipeline was built using two public APIs following a **Bronze → Silver 
 ### **Assignment 4 (Part 2) — Statistical Analysis App**
 The project was extended by:
 
-- Adding a **new external data source (holidays)**
+- Adding a new external data source (holidays)
 - Creating additional derived variables
-- Building an **interactive statistical analysis app using Streamlit**
+- Building an interactive statistical analysis app using Streamlit
 - Performing multiple statistical tests
 
 ---
 
 ## Data Sources
 
-This project uses the following APIs:
+This project uses the following public APIs:
 
-- Weather Data: :contentReference[oaicite:0]{index=0}  
-- Air Quality Data: :contentReference[oaicite:1]{index=1}  
-- Holiday Data (Assignment 4): :contentReference[oaicite:2]{index=2}  
+- Weather Data from: https://open-meteo.com/en/docs/historical-weather-api
+- Air Quality Data from: https://open-meteo.com/en/docs/air-quality-api
+- Holiday Data (Assignment 4) from: https://canada-holidays.ca/api
 
 All datasets are aligned using the `date` field.
 
@@ -122,7 +122,7 @@ Is air quality (PM2.5) affected by weather conditions and holidays?
 
 ## Interactive App
 
-An interactive dashboard was built using :contentReference[oaicite:3]{index=3}.
+An interactive dashboard was built using Streamlit.
 
 ### Features:
 - Data filtering (date range, categories)
