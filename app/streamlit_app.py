@@ -1,11 +1,12 @@
 from pathlib import Path
+from scipy import stats
+from textwrap import dedent 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from scipy import stats
 
-DATA_PATH = Path("assignment3&4/data/gold/final_dataset.csv")
+DATA_PATH = Path("data/gold/final_dataset.csv")
 
 st.set_page_config(
     page_title="Toronto 2025 Weather & Air Quality Analysis",
@@ -38,9 +39,9 @@ def load_data() -> pd.DataFrame:
         df["is_holiday"] = 0
 
     if "holiday_name" in df.columns:
-        df["holiday_name"] = df["holiday_name"].fillna("No Holiday")
+        df["holiday_name"] = df["holiday_name"].fillna("N/A")
     else:
-        df["holiday_name"] = "No Holiday"
+        df["holiday_name"] = "N/A"
 
     df["day_type"] = np.where(df["is_holiday"] == 1, "Holiday", "Non-holiday")
 
@@ -65,28 +66,51 @@ except Exception as e:
     st.stop()
 
 st.title("Weather & Air Quality Interactive Statistical Analysis")
+st.subheader("Toronto 2025")
 st.caption("Durham College — Applied Data Analytics — DATA 1204 — Assignment 4 — Streamlit App")
 
+st.subheader("Project Overview")
+st.write(
+    """
+    This dashboard was made for my Statistical and Predictive Modelling for Analytics 1 (DATA 1204) course in the Applied Data Analytics 
+    program at Durham College. This is the fourth assignment in my DATA 1204 course and is a continuation of Assignment 3: Data Pipeline for Statistical Analysis. 
+    In the previous assignment, I made a project analysing weather and air-quality data in Toronto in 2025.  
+    This was done using a medallion architecture (bronze-silver-gold) data design pattern for simple data engineering. 
+    I added a new external data source for this assignment. That being a Canadian/Ontario holiday calendar from a public API. 
+    The join key that I used was 'date' to join my original gold-level dataset to the data from the new API. The addition of 
+    this new data source gives us a useful categorical comparison: holiday days versus non-holiday days. The main question 
+    that this project explores is "Do holidays affect air quality patterns?" and related questions.
+    
+    HINT: July has the most bad air days.
+    """
+)
+
 with st.sidebar:
+
     st.header("Filters")
     min_date = df["date"].min().date()
     max_date = df["date"].max().date()
 
+    st.caption("Data Preview tab")
+
     date_range = st.date_input(
-        "Date range",
+        "Date Range",
         value=(min_date, max_date),
         min_value=min_date,
         max_value=max_date,
     )
 
+    st.caption("Visual Story tab")
+
     view_filter = st.selectbox(
-        "Chart view",
+        "Filter Charts",
         ["All rows", "Holiday only", "Non-holiday only"],
         index=0,
     )
 
     st.markdown("---")
-    st.markdown("### Test settings")
+    st.markdown("### Test Settings")
+    st.caption("Hypothesis Tests tab")
     one_sample_var = st.selectbox(
         "Variable for one-sample t-test",
         ["pm25", "temp_max", "temp_min", "precipitation"],
@@ -94,7 +118,11 @@ with st.sidebar:
     )
     benchmark = st.number_input("Benchmark value", value=35.0, step=1.0)
 
-start_date, end_date = date_range
+if isinstance(date_range, tuple) and len(date_range) == 2:
+    start_date, end_date = date_range
+else:
+    st.warning("Please select both a start date and an end date to filter the data.")
+    st.stop()
 analysis_df = df[(df["date"].dt.date >= start_date) & (df["date"].dt.date <= end_date)].copy()
 
 chart_df = analysis_df.copy()
@@ -105,100 +133,137 @@ elif view_filter == "Non-holiday only":
 
 chart_df = chart_df.sort_values("date")
 
-st.subheader("Project Overview")
-st.write(
-    """
-    This dashboard was made for my Statistics and Predictive Modelling for Analytics course in the Applied Data Analytics 
-    program at Durham College. This is a continuation of Assignment 3: Data Pipeline for Statistical Analysis. In the previous 
-    assignment, I made a project analysing weather and air-quality data in Toronto in 2025. This was done using a medallion 
-    architecture (bronze-silver-gold) data design pattern for simple data engineering. 
-    I added a new external data source for this assignment. This is a Canadian/Ontario holiday calendar from a public API. 
-    The join key that I used was 'date' to join my original gold-level dataset to the data from the new API. The addition of 
-    this new data source gives us a useful categorical comparison: holiday days versus non-holiday days. The main question 
-    that this project explores is "Do holidays affect air quality patterns?" and related questions.
-    """
-)
-
-# Calculating ratios for dynamic colour changes for summary metrics
+# Calculating values for dynamic colour changes
 avg_pm25 = analysis_df["pm25"].mean()
-bad_air_count = int(analysis_df['bad_air_day'].sum())
+bad_air_count = int(analysis_df["bad_air_day"].sum())
 total_days = len(analysis_df)
 bad_air_ratio = bad_air_count / total_days if total_days > 0 else 0
 
-# METRIC 2: PM2.5 Dynamic Colour
-if avg_pm25 < 12.0:
-    pm_color = "green"
-    pm_status = "Good"
-elif avg_pm25 < 35.4:
-    pm_color = "yellow"
-    pm_status = "Moderate"
-else:
-    pm_color = "red"
-    pm_status = "Unhealthy"
+def air_quality_level(avg_pm25, bad_air_ratio):
+    """
+    Returns a clearer colour/status pair.
+    """
+    # PM2.5 average status
+    if avg_pm25 < 12.0:
+        pm_color = "green"
+        pm_status = "Good"
+    elif avg_pm25 < 35.4:
+        pm_color = "orange"
+        pm_status = "Moderate"
+    else:
+        pm_color = "red"
+        pm_status = "Unhealthy"
 
-# METRIC 4: Bad Air Day Dynamic Colour
-# If more than 10% of days are bad, show red. If 1-10%, show orange.
-if bad_air_ratio == 0:
-    air_color = "green"
-    air_status = "Clear Skies"
-elif bad_air_ratio < 0.10:
-    air_color = "orange"
-    air_status = "Occasional Issues"
-else:
-    air_color = "red"
-    air_status = "Frequent Pollution"
+    # Bad-air-day status
+    # Wider bands so orange and red are easier to distinguish
+    is_full_year = (start_date == min_date) and (end_date == max_date)
+
+    if is_full_year:
+        air_color = "red"
+        air_status = "Full Year Selected"
+    elif bad_air_count == 0:
+        air_color = "green"
+        air_status = "No Pollution Days"
+    elif bad_air_count == 1:
+        air_color = "orange"
+        air_status = "One Pollution Day"
+    else:
+        air_color = "red"
+        air_status = "Multiple Pollution Days"
+
+    return pm_color, pm_status, air_color, air_status
+
+pm_color, pm_status, air_color, air_status = air_quality_level(avg_pm25, bad_air_ratio)
 
 # Display
 st.write("---")
 col1, col2, col3, col4 = st.columns(4)
 
+from textwrap import dedent
+
+def status_card(label, value, status, color):
+    color_map = {
+        "green": {"bg": "#d4edda", "border": "#198754", "text": "#198754"},
+        "orange": {"bg": "#fff3cd", "border": "#fd7e14", "text": "#fd7e14"},
+        "red": {"bg": "#ffcccc", "border": "#cc0000", "text": "#b30000"},
+        "gray": {"bg": "#f1f3f5", "border": "#ced4da", "text": "#000000"},
+    }
+
+    c = color_map[color]
+
+    html = dedent(f"""
+    <div style="background-color: {c['bg']}; border: 1px solid {c['border']}; border-radius: 12px; padding: 14px; text-align: center;">
+        <div style="font-size: 14px; font-weight: 600; color: #333;">{label}</div>
+        <div style="font-size: 30px; font-weight: 700; color: {c['text']};">{value}</div>
+        <div style="font-size: 13px; color: #333;">{status}</div>
+    </div>
+    """)
+
+    st.markdown(html, unsafe_allow_html=True)
+
 with col1:
-    st.write("**Rows in Data**")
-    st.subheader(f"{total_days:,}")
-    st.caption("Context: Days in 2025")
+    status_card("Rows in Data", f"{total_days:,}", "Filtered Period", "gray")
 
 with col2:
-    st.write("**Average PM2.5**")
-    st.markdown(f"### :{pm_color}[{avg_pm25:.4f}]")
-    st.caption(f"Status: **{pm_status}**")
+    status_card("Average PM2.5", f"{avg_pm25:.1f}", f"Status: {pm_status}", pm_color)
 
 with col3:
-    st.write("**Holiday Days**")
-    st.markdown(f"### :blue[{int(analysis_df['is_holiday'].sum())}]")
-    st.caption("Context: Calendar Events")
+    holiday_count = int(analysis_df["is_holiday"].sum())
+    holiday_color = "green" if holiday_count > 0 else "gray"
+    holiday_status = "Holiday Dates Included" if holiday_count > 0 else "No Holidays in Range"
+    status_card("Holiday Days", f"{holiday_count}", holiday_status, holiday_color)
 
-with col4:    
-    st.write("**Bad Air Days**")
-    st.markdown(f"### :{air_color}[{bad_air_count}]")
-    st.caption(f"Trend: **{air_status}**")
+with col4:
+    status_card("Bad Air Days", f"{bad_air_count}", f"Trend: {air_status}", air_color)
+
 st.write("---")
 
-tab1, tab2, tab3, tab4 = st.tabs(["Data Preview", "Visual story", "Hypothesis tests", "Reflection"])
+tab1, tab2, tab3, tab4 = st.tabs(["Data Preview", "Visual Story", "Hypothesis Tests", "Reflection"])
 
 with tab1:
     st.subheader("Data Preview")
-    st.write("Sample of the final dataset:")
-    st.dataframe(analysis_df.head(10), width='stretch')
+    st.write("Sample of the final dataset (first 10 rows):")
+    st.dataframe(analysis_df.head(10), column_config={"date": st.column_config.DateColumn("Date", format="YYYY-MM-DD"), 
+    "province": None, "federal_holiday": None, "is_holiday": st.column_config.CheckboxColumn("is_holiday")}, 
+    width='stretch', hide_index=True,)
 
     st.write("Summary statistics for numeric columns:")
     st.dataframe(analysis_df.describe(include=[np.number]).T, width='stretch')
 
     st.write("Useful columns in this project:")
-    st.markdown(
-        """
-        - `pm25`: daily average air pollution (accumulation of fine particles measuring 2.5 micrometers or smaller)
-        - `temp_max`: daily maximum temperature
-        - `precipitation`: daily precipitation total
-        - `bad_air_day`: PM2.5 above your threshold
-        - `bad_weather_day`: weather-based flag from Assignment 3
-        - `is_holiday`: new binary variable from the holiday source
-        - `holiday_name`: holiday label, when applicable
-        """
+
+    column_info = pd.DataFrame({
+        "Column": [
+            "pm25",
+            "temp_max",
+            "precipitation",
+            "bad_air_day",
+            "bad_weather_day",
+            "is_holiday",
+            "day_type"
+        ],
+
+        "Description": [
+            "Daily average PM2.5 air pollution level (accumulation of fine particles measuring 2.5 micrometers or smaller)",
+            "Daily maximum temperature",
+            "Daily precipitation total",
+            "Indicates whether daily PM2.5 exceeded 35 µg/m³ (exceeded the pollution threshold)",
+            "Indicates days with heavy precipitation (>5mm) or freezing temperatures (maximum temperature below 0°C)",
+            "Binary (yes or no) holiday indicator from the Canadian Holiday API",
+            "Categorical label: Holiday or Non-holiday"
+        ]
+    })
+
+    st.dataframe(
+        column_info,
+        width='stretch',
+        hide_index=True
     )
 
 with tab2:
     st.subheader("Visual story")
 
+    st.info(f"Current chart filter: {view_filter}")
     left, right = st.columns(2)
     with left:
         fig1 = px.line(
@@ -258,7 +323,7 @@ with tab3:
         st.write(f"p-value: **{safe_number(p_val)}**")
         st.write(f"Decision: **{result_text(p_val)}**")
     else:
-        st.warning("Not enough rows for the one-sample t-test after filtering.")
+        st.warning("Not enough rows for the one-sample t-test after filtering. Filter Date Range to select more/alternate dates.")
 
     st.markdown("---")
     st.markdown("### 2) Two-sample t-test")
@@ -281,10 +346,10 @@ with tab3:
         st.write(f"p-value: **{safe_number(p_val2)}**")
         st.write(f"Decision: **{result_text(p_val2)}**")
     else:
-        st.warning("Not enough rows in one of the groups for the two-sample t-test.")
+        st.warning("Not enough rows in one of the groups for the two-sample t-test. Filter Date Range to select more/alternate dates.")
 
     st.markdown("---")
-    st.markdown("### 3) Chi-square test of independence")
+    st.markdown("### 3) Chi-square Test of Independence")
     chi_df = analysis_df.copy()
     chi_df["bad_air_label"] = np.where(chi_df["bad_air_day"] == 1, "Bad air day", "Normal air day")
 
@@ -300,10 +365,10 @@ with tab3:
         st.write(f"p-value: **{safe_number(chi_p)}**")
         st.write(f"Decision: **{result_text(chi_p)}**")
     else:
-        st.warning("Not enough categories for the chi-square test.")
+        st.warning("Not enough categories for the chi-square test. Filter Date Range to select more/alternate dates.")
 
     st.markdown("---")
-    st.markdown("### 4) Variance comparison")
+    st.markdown("### 4) Variance Comparison")
     st.write("Method: Levene test for equality of variance")
     st.write("Question: Is the spread of PM2.5 different on holiday and non-holiday days?")
 
@@ -313,10 +378,10 @@ with tab3:
         st.write(f"p-value: **{safe_number(lev_p)}**")
         st.write(f"Decision: **{result_text(lev_p)}**")
     else:
-        st.warning("Not enough rows for the variance comparison.")
+        st.warning("Not enough rows for the variance comparison. Filter Date Range to select more/alternate dates.")
 
     st.markdown("---")
-    st.markdown("### 5) Correlation analysis")
+    st.markdown("### 5) Correlation Analysis")
     corr_method = st.selectbox("Correlation method", ["Pearson", "Spearman"], index=1)
 
     corr_df = analysis_df[["temp_max", "pm25"]].dropna()
@@ -332,19 +397,20 @@ with tab3:
         st.write(f"p-value: **{safe_number(corr_p)}**")
         st.write(f"Decision: **{result_text(corr_p)}**")
     else:
-        st.warning("Not enough rows for correlation analysis.")
+        st.warning("Not enough rows for correlation analysis. Filter Date Range to select more/alternate dates.")
 
 with tab4:
-    st.subheader("Reflection / limitations")
+    st.subheader("Reflection / Limitations")
     st.markdown(
         """
-        - The app uses a local Gold dataset, so it is easy to run and explain.
+        - The app uses a local Gold dataset (available on GitHub), so it is easy to run and explain.
         - The holiday source gives a simple, meaningful grouping variable.
         - One-sample t-tests need a benchmark that you can justify clearly.
         - The t-tests assume independence and roughly normal sampling behavior.
         - The chi-square test needs reasonable expected cell counts.
         - The correlation result shows association, not causation.
         - Exact date joining can miss any real-world effects that happen before or after the observed holiday date.
+        - Analysis is restricted to a historical one-year (2025) dataset. Meaning the pipeline is currently optimized for batch processing rather than live API polling.
         """
     )
 

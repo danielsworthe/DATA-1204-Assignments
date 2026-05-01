@@ -2,22 +2,22 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-A3_GOLD_PATH = Path("assignment3&4/data/gold/weather_&_air_quality_gold.csv")
-HOLIDAY_SILVER_PATH = Path("assignment3&4/data/silver/holidays.csv")
-FINAL_GOLD_PATH = Path("assignment3&4/data/gold/final_dataset.csv")
+ASSIGNMENT_3_GOLD_PATH = Path("data/gold/weather_&_air_quality_gold.csv")
+HOLIDAY_SILVER_PATH = Path("data/silver/holidays.csv")
+FINAL_GOLD_PATH = Path("data/gold/final_dataset.csv")
 FINAL_GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def main() -> None:
     print("Starting Final Gold Dataset creation...")
     
     # 1. Verification of source files
-    if not A3_GOLD_PATH.exists():
-        raise FileNotFoundError(f"Missing Assignment 3 Gold file: {A3_GOLD_PATH}")
+    if not ASSIGNMENT_3_GOLD_PATH.exists():
+        raise FileNotFoundError(f"Missing Assignment 3 Gold file: {ASSIGNMENT_3_GOLD_PATH}")
     if not HOLIDAY_SILVER_PATH.exists():
         raise FileNotFoundError(f"Missing holiday Silver file: {HOLIDAY_SILVER_PATH}")
 
     print("Reading input CSV files...")
-    weather = pd.read_csv(A3_GOLD_PATH, parse_dates=["date"])
+    weather = pd.read_csv(ASSIGNMENT_3_GOLD_PATH, parse_dates=["date"])
     holidays = pd.read_csv(HOLIDAY_SILVER_PATH, parse_dates=["date", "holiday_date"])
 
     # 2. Safety feature checks

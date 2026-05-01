@@ -176,24 +176,47 @@ python transform/create_final_dataset.py
 
 ## 📁 Project Structure
 
-assignment3&4/
+```
+DATA-1204-Assignment-3-4/
 │
-├── data/
-│ ├── bronze/
-│ ├── silver/
-│ └── gold/
+├── app/                              Streamlit Application
+│   └── streamlit_app.py              Main UI script
 │
-├── ingest/
-├── transform/
-├── app/
-│ └── streamlit_app.py
+├── data/                             The Medallion Data Store
+│   ├── bronze/                       Raw API responses (JSON)
+│   │   ├── weather_20260410.json
+│   │   ├── air_quality_20260410.json
+│   │   └── holidays_ON_2025.json
+│   ├── silver/                       Cleaned / Parsed tables (CSV/Parquet)
+│   │   ├── weather.csv
+│   │   ├── air_quality.csv
+│   │   └── holidays.csv
+│   └── gold/                         Final merged datasets for analysis
+│       ├── weather_&_air_gold.csv
+│       └── final_dataset.csv         <-- File used by streamlit_app.py
 │
-├── analysis_preview.md
-├── assignment4_analysis_plan.md
-├── assignment4_reflection.md
-├── README.md
-├── requirements.txt
-└── .gitignore
+├── ingest/                           Data Extraction Logic
+│   ├── ingest_weather.py
+│   ├── ingest_air_quality.py
+│   └── ingest_holidays.py
+│
+├── transform/                        Data Transformation Logic
+│   ├── transform_weather.py
+│   ├── transform_air_quality.py
+│   ├── transform_holidays.py
+│   ├── create_gold.py                Merges Weather + Air Quality
+│   └── create_final_dataset.py       Merges Gold + Holidays
+│
+├── .env.example                      Template for API keys
+├── .gitattributes                    Line-ending normalization settings
+├── .gitignore                        Instructions on what NOT to upload
+├── assignment3_CHANGELOG.md          History of project modifications
+├── analysis_preview.md               Preliminary data findings
+├── assignment4_analysis_plan.md      Roadmap for statistical testing
+├── assignment4_reflection.md         Personal learnings and AI usage notes
+├── README.md                         The "Front Page" of your project
+└── requirements.txt                  List of Python dependencies
+```
 
 ---
 
